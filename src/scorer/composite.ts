@@ -108,7 +108,17 @@ function inferPhase(stages: StageResult[]): { phase: Phase; rationale: string } 
   if (ignition !== null && ignition >= 60) {
     return {
       phase: "igniting",
-      rationale: "Attention is arriving fast; no distribution visible yet.",
+      rationale:
+        insider === null
+          ? "Attention is arriving fast. Whether insiders are distributing is unknown — that stage had no data."
+          : "Attention is arriving fast, and the early cohort is not yet selling.",
+    };
+  }
+  if (known < 3) {
+    return {
+      phase: "indeterminate",
+      rationale:
+        "Nothing is signalling strongly, but too much of the model is dark to call this quiet.",
     };
   }
   return { phase: "quiet", rationale: "No stage is signalling strongly." };
@@ -127,7 +137,9 @@ function collectCaveats(snap: TokenSnapshot, stages: StageResult[]): string[] {
     const coverage = snap.holders.reduce((s, h) => s + h.amount, 0) / snap.supply.total;
     if (coverage < MIN_SUPPLY_COVERAGE) {
       out.push(
-        `The ${snap.holders.length} holder rows cover ${(coverage * 100).toFixed(1)}% of supply; a large untagged position could sit outside that window.`,
+        snap.holdersAreLargest === true
+          ? `The ${snap.holders.length} largest accounts hold only ${(coverage * 100).toFixed(1)}% of supply, so the rest is spread across smaller wallets. Concentration at the top is an upper bound and is reliable; a single actor split across many small wallets would not show here, and would surface in insider flow instead.`
+          : `The ${snap.holders.length} holder rows cover ${(coverage * 100).toFixed(1)}% of supply and are not known to be the largest, so a bigger position could sit outside that window.`,
       );
     }
   }

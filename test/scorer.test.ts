@@ -121,6 +121,41 @@ test("no holder data reads differently from all-holders-tagged", async () => {
   assert.notEqual(empty.unavailable, allTagged.unavailable);
 });
 
+test("an igniting token never claims insiders are clean when that stage is dark", async () => {
+  const captured = await snapshot("captured");
+  const healthy = await snapshot("healthy");
+
+  // Keep captured's ignition (needs concentration < 50 and exhaustion dark
+  // too, or an earlier branch in inferPhase fires first and this one is
+  // never reached) but borrow healthy's long-tail holders so concentration
+  // doesn't also claim a float a few wallets control.
+  const snap = {
+    ...captured,
+    holders: healthy.holders,
+    earlyWallets: [],
+    market: { ...captured.market, ath: undefined },
+    series: [],
+  };
+
+  const r = score(snap);
+  assert.equal(r.phase, "igniting");
+  assert.match(r.phaseRationale, /unknown|no data/i);
+  assert.doesNotMatch(r.phaseRationale, /not yet selling/i);
+});
+
+test("low coverage from a largest-first provider is not reported as a hidden whale", async () => {
+  const snap = await snapshot("captured");
+  const thin: TokenSnapshot = {
+    ...snap,
+    supply: { ...snap.supply, total: snap.supply.total * 20, circulating: undefined },
+  };
+
+  const r = score(thin);
+  const joined = r.caveats.join("\n");
+  assert.match(joined, /upper bound and is reliable/i);
+  assert.doesNotMatch(joined, /could sit outside that window/i);
+});
+
 test("scores and confidence stay in range across all shapes", async () => {
   for (const shape of ["captured", "distributing", "healthy"] as const) {
     const r = score(await snapshot(shape));
