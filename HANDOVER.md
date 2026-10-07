@@ -99,7 +99,7 @@ Stating these is a strength with judges, not a weakness. The README says all of 
 
 ## Where everything lives
 
-- **Code** — this repo. `src/scorer/` is pure logic, `src/data/` is all network access, `test/` has the 9 tests.
+- **Code** — this repo, public on GitHub at https://github.com/sixty9ine/foreshock (created and pushed 2026-10-07). `src/scorer/` is pure logic, `src/data/` is all network access, `test/` has the 9 tests.
 - **Thresholds** — `src/scorer/thresholds.ts`, every tuned number in one file, by design.
 - **Submission description** (486 words) — `SUBMISSION.md`.
 - **Entry form answers** (six questions) and the 467-character registration blurb — `ENTRY.md`.
