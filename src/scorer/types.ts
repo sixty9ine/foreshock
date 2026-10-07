@@ -119,6 +119,7 @@ export interface StageResult {
 export type Phase =
   | "quiet"
   | "igniting"
+  | "captured"
   | "distributing"
   | "exhausted"
   | "unwinding"
@@ -137,4 +138,21 @@ export interface Report {
   stages: StageResult[];
   /** Anything that materially limited the read. */
   caveats: string[];
+  /** A plain copy of the inputs the stages above actually scored — not a
+   *  second source of truth, just enough of the snapshot for a saved report
+   *  to be checked against what the provider returned at the time, instead
+   *  of standing on the composite and phase alone. */
+  inputs: {
+    market: {
+      priceUsd: number;
+      marketCapUsd: number;
+      liquidityUsd: number;
+      volume24hUsd: number;
+      priceChange: { h1?: number; h6?: number; h24?: number; d7?: number };
+      pairCreatedAt?: number;
+    };
+    /** How many holder rows the snapshot carried — not the same as
+     *  holderCount, which is the provider's own total-holder figure. */
+    holderRows: number;
+  };
 }

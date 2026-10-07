@@ -4,9 +4,10 @@ import { test } from "node:test";
 import { extractEarlyBuyers } from "../src/data/earlyWallets.js";
 import { fixture } from "../src/data/fixture.js";
 import { merge, type DataProvider } from "../src/data/provider.js";
-import { score } from "../src/scorer/composite.js";
+import { reconcilePhase, score } from "../src/scorer/composite.js";
 import { scoreConcentration } from "../src/scorer/stages/concentration.js";
-import type { TokenSnapshot } from "../src/scorer/types.js";
+import { band } from "../src/scorer/thresholds.js";
+import type { Phase, TokenSnapshot } from "../src/scorer/types.js";
 
 const snapshot = (shape: "captured" | "distributing" | "healthy"): Promise<TokenSnapshot> =>
   fixture(shape).getSnapshot("TestMint111111111111111111111111111111111");
@@ -155,6 +156,67 @@ test("low coverage from a largest-first provider is not reported as a hidden wha
   const joined = r.caveats.join("\n");
   assert.match(joined, /upper bound and is reliable/i);
   assert.doesNotMatch(joined, /could sit outside that window/i);
+});
+
+test("severe concentration without ignition reaches 'captured', not 'quiet'", async () => {
+  const snap = await snapshot("captured");
+
+  // Keep captured's steep-head holders (concentration stays severe) but
+  // flatten everything ignition reads, and remove exhaustion's and
+  // insiderFlow's inputs — a token that is structurally captured but not
+  // currently pumping, distributing, or exhausted.
+  const flat: TokenSnapshot = {
+    ...snap,
+    market: {
+      ...snap.market,
+      liquidityUsd: 500_000,
+      volume24hUsd: 10_000,
+      priceChange: { h24: 0.2 },
+      pairCreatedAt: snap.fetchedAt - 400 * 24 * 3_600_000,
+      ath: undefined,
+    },
+    holderCount: 1000,
+    holderCount24hAgo: 1000,
+    series: [],
+    earlyWallets: [],
+  };
+
+  const r = score(flat);
+  assert.equal(r.phase, "captured");
+  assert.match(r.phaseRationale, /\d+\/100/, "rationale must name the actual concentration figure");
+});
+
+test("reconcilePhase never lets 'quiet' stand against a high or severe composite", () => {
+  const phases: Phase[] = [
+    "quiet",
+    "igniting",
+    "captured",
+    "distributing",
+    "exhausted",
+    "unwinding",
+    "indeterminate",
+  ];
+
+  for (const phase of phases) {
+    for (let composite = 0; composite <= 100; composite++) {
+      const result = reconcilePhase({ phase, rationale: "stub" }, composite);
+
+      if (result.phase === "quiet") {
+        const b = band(composite);
+        assert.ok(
+          b !== "high" && b !== "severe",
+          `composite ${composite} (${b}) must never reconcile to quiet`,
+        );
+      }
+      if (phase !== "quiet") {
+        assert.equal(
+          result.phase,
+          phase,
+          "reconcilePhase must leave a non-quiet inferred phase untouched",
+        );
+      }
+    }
+  }
 });
 
 test("extractEarlyBuyers excludes the pool and the deployer, and does not re-rank a repeat buyer", () => {

@@ -1,0 +1,49 @@
+
+MASKIT · Cd8LqgfpwzxjtU8YwrK9BvFwtR2FvPAHVbLZrVwpump
+────────────────────────────────────────────────────
+composite 77/100  (severe)   confidence 71%
+phase     captured — Concentration scores 100/100 — a small set of wallets controls the float, with no active distribution or exhaustion signal to place this later in the lifecycle.
+
+  ignition          33  ███████·············  conf 50%
+     Price change (24h): +0.2% [0.00]
+     Pair age: 3h [1.00]
+       Minted within the scoring window
+
+  concentration    100  ████████████████████  conf 100%
+     Top 10 share of float: 100.0% [1.00]
+     Largest single holder: 97.4% [1.00]
+       CkNdc9AuznNVFbCswtj5maYQkVejhVGtiFZAhE9ovTQk
+     Wallets to control half the float: 1 [1.00]
+       A handful of wallets can set the price alone
+     Supply covered by returned rows: 100.0%
+       4 rows
+     Excluded from float: 0 addresses
+       LP, burn, CEX and program accounts are not counted as holders
+
+  liquidityTrap      —   No pooled liquidity figure in the snapshot.
+
+  insiderFlow       53  ███████████·········  conf 64%
+     Early cohort distributed: 100.0% [1.00]
+       19 of 20 first buyers are fully out
+     Largest shared-funder cluster: 1 wallet [0.00]
+       No common funding source found among early buyers
+     Float still held by the early cohort: 0.0% [0.00]
+       Supply positioned above the market that has not moved yet
+     Funding traceability: 10%
+       Under half the cohort has a traceable funder; the cluster read is weak
+
+  exhaustion         —   No all-time high and no usable price series.
+
+caveats
+  · exhaustion: GeckoTerminal returned no candles for this pool
+  · liquidityTrap: No pooled liquidity figure in the snapshot.
+  · exhaustion: No all-time high and no usable price series.
+  · No circulating-supply figure; float is derived from total supply minus tagged accounts.
+  · Thresholds are ported from EVM-side research on AI-agent narrative tokens and have not been calibrated on Solana. Treat the magnitude as indicative and the ordering as the useful part.
+
+inputs scored (plain copy, not re-derived)
+  price $0.00000332200  market cap $3.3k
+  liquidity $0  volume24h $15.8k
+  price change: h6 +0.19%, h24 +0.19%
+  pair created: 2026-10-07T14:37:21.000Z
+  holder rows: 4

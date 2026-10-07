@@ -5,6 +5,7 @@ import { dexscreener } from "./data/dexscreener.js";
 import { fixture } from "./data/fixture.js";
 import { helius } from "./data/helius.js";
 import { merge, type DataProvider } from "./data/provider.js";
+import { usd } from "./scorer/util.js";
 
 /**
  * Usage
@@ -142,6 +143,19 @@ function render(r: Report): void {
     for (const c of r.caveats) console.log(`  · ${c}`);
     console.log("");
   }
+
+  const m = r.inputs.market;
+  const pc = Object.entries(m.priceChange)
+    .map(([k, v]) => `${k} ${v! >= 0 ? "+" : ""}${v}%`)
+    .join(", ");
+  console.log("inputs scored (plain copy, not re-derived)");
+  console.log(`  price $${m.priceUsd.toPrecision(6)}  market cap ${usd(m.marketCapUsd)}`);
+  console.log(`  liquidity ${usd(m.liquidityUsd)}  volume24h ${usd(m.volume24hUsd)}`);
+  if (pc) console.log(`  price change: ${pc}`);
+  if (m.pairCreatedAt !== undefined) {
+    console.log(`  pair created: ${new Date(m.pairCreatedAt).toISOString()}`);
+  }
+  console.log(`  holder rows: ${r.inputs.holderRows}`);
 }
 
 function stageLine(s: StageResult): string {

@@ -3,7 +3,7 @@ import { scoreExhaustion } from "./stages/exhaustion.js";
 import { scoreIgnition } from "./stages/ignition.js";
 import { scoreInsiderFlow } from "./stages/insiderFlow.js";
 import { scoreLiquidityTrap } from "./stages/liquidityTrap.js";
-import { MIN_SUPPLY_COVERAGE, WEIGHTS } from "./thresholds.js";
+import { band, CONCENTRATION, MIN_SUPPLY_COVERAGE, WEIGHTS } from "./thresholds.js";
 import type { Phase, Report, StageId, StageResult, TokenSnapshot } from "./types.js";
 
 /**
@@ -39,7 +39,7 @@ export function score(snap: TokenSnapshot): Report {
   const confidence =
     live.length > 0 ? live.reduce((sum, s) => sum + s.confidence, 0) / live.length : 0;
 
-  const { phase, rationale } = inferPhase(stages);
+  const { phase, rationale } = reconcilePhase(inferPhase(stages), composite);
 
   return {
     mint: snap.mint,
@@ -51,6 +51,19 @@ export function score(snap: TokenSnapshot): Report {
     phaseRationale: rationale,
     stages,
     caveats: collectCaveats(snap, stages),
+    inputs: {
+      market: {
+        priceUsd: snap.market.priceUsd,
+        marketCapUsd: snap.market.marketCapUsd,
+        liquidityUsd: snap.market.liquidityUsd,
+        volume24hUsd: snap.market.volume24hUsd,
+        priceChange: snap.market.priceChange,
+        ...(snap.market.pairCreatedAt !== undefined
+          ? { pairCreatedAt: snap.market.pairCreatedAt }
+          : {}),
+      },
+      holderRows: snap.holders.length,
+    },
   };
 }
 
@@ -99,6 +112,17 @@ function inferPhase(stages: StageResult[]): { phase: Phase; rationale: string } 
       rationale: "Buying is thinning out under a price that has not adjusted yet.",
     };
   }
+  // Concentration carries the heaviest composite weight but, until this
+  // branch, had no path to a phase that did not also require ignition — a
+  // token that is severely concentrated and NOT currently pumping fell
+  // through to "quiet", which reads as safe. This fires independently of
+  // ignition for exactly that reason.
+  if (concentration !== null && concentration >= CONCENTRATION.CAPTURED_PHASE_MIN) {
+    return {
+      phase: "captured",
+      rationale: `Concentration scores ${concentration}/100 — a small set of wallets controls the float, with no active distribution or exhaustion signal to place this later in the lifecycle.`,
+    };
+  }
   if (ignition !== null && ignition >= 60 && (concentration ?? 0) >= 50) {
     return {
       phase: "igniting",
@@ -122,6 +146,29 @@ function inferPhase(stages: StageResult[]): { phase: Phase; rationale: string } 
     };
   }
   return { phase: "quiet", rationale: "No stage is signalling strongly." };
+}
+
+/**
+ * A last-line invariant, independent of whatever inferPhase's branches do or
+ * do not cover: "quiet" must never describe a high or severe composite.
+ * inferPhase only looks at ignition/concentration/insiderFlow/exhaustion,
+ * but liquidityTrap carries real composite weight without feeding a phase
+ * branch at all — so a liquidityTrap-driven severe score could reach "quiet"
+ * through a gap this function does not know about yet. Catching the
+ * CONTRADICTION here, rather than trying to anticipate every path to one, is
+ * what stops this class of bug from recurring under a different cause.
+ */
+export function reconcilePhase(
+  inferred: { phase: Phase; rationale: string },
+  composite: number,
+): { phase: Phase; rationale: string } {
+  if (inferred.phase !== "quiet") return inferred;
+  const b = band(composite);
+  if (b !== "high" && b !== "severe") return inferred;
+  return {
+    phase: "indeterminate",
+    rationale: `The stages disagree: composite reads ${composite}/100 (${b}) but no individual stage justified a lifecycle phase. Treat this as unresolved, not as low risk.`,
+  };
 }
 
 function collectCaveats(snap: TokenSnapshot, stages: StageResult[]): string[] {

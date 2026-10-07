@@ -47,6 +47,13 @@ export const CONCENTRATION = {
   TOP1_FLOAT: { lo: 0.04, hi: 0.2 },
   /** Number of wallets needed to reach half the float. Fewer is worse. */
   WALLETS_TO_HALF: { worst: 5, benign: 60 },
+  /** Concentration score above which the "captured" phase fires on its own,
+   *  with no ignition required. This is deliberately a high bar — the
+   *  weaker 50 used inside the igniting branches only adds color to an
+   *  ALREADY-firing ignition read; this one has to carry a phase label by
+   *  itself, for a token that is severely concentrated but not currently
+   *  pumping. See inferPhase() in composite.ts. */
+  CAPTURED_PHASE_MIN: 80,
 };
 
 export const LIQUIDITY_TRAP = {

@@ -1,0 +1,128 @@
+{
+  "mint": "Cd8LqgfpwzxjtU8YwrK9BvFwtR2FvPAHVbLZrVwpump",
+  "symbol": "MASKIT",
+  "generatedAt": 1791393334512,
+  "composite": 76,
+  "confidence": 0.73,
+  "phase": "captured",
+  "phaseRationale": "Concentration scores 100/100 — a small set of wallets controls the float, with no active distribution or exhaustion signal to place this later in the lifecycle.",
+  "stages": [
+    {
+      "stage": "ignition",
+      "score": 33,
+      "confidence": 0.5,
+      "evidence": [
+        {
+          "label": "Price change (24h)",
+          "value": "+0.2%",
+          "weight": 0
+        },
+        {
+          "label": "Pair age",
+          "value": "3h",
+          "weight": 1,
+          "note": "Minted within the scoring window"
+        }
+      ]
+    },
+    {
+      "stage": "concentration",
+      "score": 100,
+      "confidence": 1,
+      "evidence": [
+        {
+          "label": "Top 10 share of float",
+          "value": "100.0%",
+          "weight": 1
+        },
+        {
+          "label": "Largest single holder",
+          "value": "97.4%",
+          "weight": 1,
+          "note": "CkNdc9AuznNVFbCswtj5maYQkVejhVGtiFZAhE9ovTQk"
+        },
+        {
+          "label": "Wallets to control half the float",
+          "value": "1",
+          "weight": 1,
+          "note": "A handful of wallets can set the price alone"
+        },
+        {
+          "label": "Supply covered by returned rows",
+          "value": "100.0%",
+          "note": "4 rows"
+        },
+        {
+          "label": "Excluded from float",
+          "value": "0 addresses",
+          "note": "LP, burn, CEX and program accounts are not counted as holders"
+        }
+      ]
+    },
+    {
+      "stage": "liquidityTrap",
+      "score": 0,
+      "confidence": 0,
+      "evidence": [],
+      "unavailable": "No pooled liquidity figure in the snapshot."
+    },
+    {
+      "stage": "insiderFlow",
+      "score": 53,
+      "confidence": 0.7,
+      "evidence": [
+        {
+          "label": "Early cohort distributed",
+          "value": "100.0%",
+          "weight": 1,
+          "note": "19 of 20 first buyers are fully out"
+        },
+        {
+          "label": "Largest shared-funder cluster",
+          "value": "1 wallet",
+          "weight": 0,
+          "note": "No common funding source found among early buyers"
+        },
+        {
+          "label": "Float still held by the early cohort",
+          "value": "0.0%",
+          "weight": 0,
+          "note": "Supply positioned above the market that has not moved yet"
+        },
+        {
+          "label": "Funding traceability",
+          "value": "25%",
+          "note": "Under half the cohort has a traceable funder; the cluster read is weak"
+        }
+      ]
+    },
+    {
+      "stage": "exhaustion",
+      "score": 0,
+      "confidence": 0,
+      "evidence": [],
+      "unavailable": "No all-time high and no usable price series."
+    }
+  ],
+  "caveats": [
+    "exhaustion: GeckoTerminal returned no candles for this pool",
+    "liquidityTrap: No pooled liquidity figure in the snapshot.",
+    "exhaustion: No all-time high and no usable price series.",
+    "No circulating-supply figure; float is derived from total supply minus tagged accounts.",
+    "Thresholds are ported from EVM-side research on AI-agent narrative tokens and have not been calibrated on Solana. Treat the magnitude as indicative and the ordering as the useful part."
+  ],
+  "inputs": {
+    "market": {
+      "priceUsd": 0.000003322,
+      "marketCapUsd": 3322.5,
+      "liquidityUsd": 0,
+      "volume24hUsd": 15756.68,
+      "priceChange": {
+        "h6": 0.19,
+        "h24": 0.19
+      },
+      "pairCreatedAt": 1791383841000
+    },
+    "holderRows": 4
+  }
+}
