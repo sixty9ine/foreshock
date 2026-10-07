@@ -221,6 +221,67 @@ test("extractEarlyBuyers stops at the requested cohort size", () => {
   assert.equal(ranked[4]!.address, transfers[4]!.toUserAccount);
 });
 
+test("extractEarlyBuyers does not drop a wash-trading wallet as a pool", () => {
+  const DEPLOYER = "Deployer1111111111111111111111111111111111";
+  const POOL = "Pool11111111111111111111111111111111111111";
+  const WASHER = "Washer111111111111111111111111111111111111";
+
+  let i = 0;
+  const tx = (from: string, to: string) => ({
+    signature: `s${i++}`,
+    timestamp: 0,
+    fromUserAccount: from,
+    toUserAccount: to,
+    tokenAmount: 1,
+  });
+
+  const transfers = [tx(DEPLOYER, POOL), tx(POOL, WASHER)];
+  // Self-churn: frequency climbs with every round trip, but WASHER's
+  // counterparty set never grows past {POOL} — that is the whole point.
+  for (let k = 0; k < 30; k++) {
+    transfers.push(tx(WASHER, POOL));
+    transfers.push(tx(POOL, WASHER));
+  }
+  for (let k = 0; k < 40; k++) {
+    transfers.push(tx(POOL, `Buyer${k}`));
+  }
+
+  const ranked = extractEarlyBuyers(transfers, 20);
+  assert.ok(
+    ranked.some((w) => w.address === WASHER),
+    "a wash-trading wallet must not be classified as a pool just for trading with itself a lot",
+  );
+  assert.equal(ranked[0]!.address, WASHER, "WASHER bought first and must hold rank 1");
+});
+
+test("extractEarlyBuyers excludes two legitimate pools, not just the loudest one", () => {
+  const DEPLOYER = "Deployer1111111111111111111111111111111111";
+  const POOL_A = "PoolA111111111111111111111111111111111111";
+  const POOL_B = "PoolB111111111111111111111111111111111111";
+
+  let i = 0;
+  const tx = (from: string, to: string) => ({
+    signature: `s${i++}`,
+    timestamp: 0,
+    fromUserAccount: from,
+    toUserAccount: to,
+    tokenAmount: 1,
+  });
+
+  const transfers = [tx(DEPLOYER, POOL_A), tx(DEPLOYER, POOL_B)];
+  // Two pools, each trading with its own disjoint set of buyers — neither
+  // is the single loudest address, so a "top one address only" rule would
+  // miss the second.
+  for (let k = 0; k < 20; k++) transfers.push(tx(POOL_A, `BuyerA${k}`));
+  for (let k = 0; k < 20; k++) transfers.push(tx(POOL_B, `BuyerB${k}`));
+
+  const ranked = extractEarlyBuyers(transfers, 50);
+  const addresses = ranked.map((w) => w.address);
+  assert.ok(!addresses.includes(POOL_A), "pool A must be excluded");
+  assert.ok(!addresses.includes(POOL_B), "pool B must be excluded");
+  assert.equal(ranked.length, 40, "all 40 genuine buyers across both pools must survive");
+});
+
 test("scores and confidence stay in range across all shapes", async () => {
   for (const shape of ["captured", "distributing", "healthy"] as const) {
     const r = score(await snapshot(shape));

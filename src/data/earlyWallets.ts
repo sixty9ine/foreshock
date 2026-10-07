@@ -1,4 +1,4 @@
-import { EARLY_WALLETS_FETCH, INSIDER_FLOW } from "../scorer/thresholds.js";
+import { EARLY_WALLETS_FETCH, INSIDER_FLOW, POOL_DETECTION } from "../scorer/thresholds.js";
 import type { EarlyWallet } from "../scorer/types.js";
 
 /**
@@ -124,15 +124,17 @@ async function walkToGenesis(apiKey: string, mint: string): Promise<WalkResult> 
 /**
  * Pure and exported for testing without network: rank distinct wallets by
  * the order they first receive the mint, excluding whichever address(es)
- * are party to a disproportionate share of transfers.
- *
- * That frequency cut is the pool-exclusion step, and it is deliberately a
- * heuristic rather than an address list: an AMM pool is a counterparty on
- * EVERY swap, buy or sell, so across any real trading history it dominates
- * the count by a wide margin regardless of which program it belongs to.
- * This is what lets insider-flow tracing work on Raydium, Orca or Pump.fun
- * alike without a per-program special case — the same generalisation gap
- * flagged against KNOWN_ADDRESSES for the concentration stage.
+ * are classified as a pool — see POOL_DETECTION in thresholds.ts for why
+ * that classification needs both appearance frequency AND counterparty
+ * breadth, not frequency alone. Frequency alone is deliberately avoided
+ * here because a wash-trading wallet round-tripping against the pool can
+ * cross any frequency share just by trading with itself more; its
+ * counterparty set cannot widen the same way, so breadth is what actually
+ * separates a pool (a hub trading with nearly everyone) from a wash-trader
+ * (trading with exactly one counterparty, repeatedly). This is also what
+ * lets insider-flow tracing work on Raydium, Orca or Pump.fun alike without
+ * a per-program special case — the same generalisation gap flagged against
+ * KNOWN_ADDRESSES for the concentration stage.
  */
 export function extractEarlyBuyers(
   transfers: RawTransfer[],
@@ -141,14 +143,35 @@ export function extractEarlyBuyers(
   if (transfers.length === 0) return [];
 
   const frequency = new Map<string, number>();
+  const counterparties = new Map<string, Set<string>>();
+  const allAddresses = new Set<string>();
   for (const t of transfers) {
     frequency.set(t.fromUserAccount, (frequency.get(t.fromUserAccount) ?? 0) + 1);
     frequency.set(t.toUserAccount, (frequency.get(t.toUserAccount) ?? 0) + 1);
+
+    if (!counterparties.has(t.fromUserAccount)) counterparties.set(t.fromUserAccount, new Set());
+    if (!counterparties.has(t.toUserAccount)) counterparties.set(t.toUserAccount, new Set());
+    counterparties.get(t.fromUserAccount)!.add(t.toUserAccount);
+    counterparties.get(t.toUserAccount)!.add(t.fromUserAccount);
+
+    allAddresses.add(t.fromUserAccount);
+    allAddresses.add(t.toUserAccount);
   }
-  const POOL_FREQUENCY_SHARE = 0.2;
+
+  // The denominator every address is judged against: everyone ELSE it could
+  // possibly have traded with. A pool's counterparty set covers most of
+  // this; a wash-trader's stays at one address no matter how many times it
+  // trades.
+  const maxPossibleCounterparties = Math.max(1, allAddresses.size - 1);
+
   const pools = new Set(
     [...frequency.entries()]
-      .filter(([, n]) => n > transfers.length * POOL_FREQUENCY_SHARE)
+      .filter(([addr, n]) => {
+        const isFrequent = n > transfers.length * POOL_DETECTION.FREQUENCY_SHARE;
+        const breadth = (counterparties.get(addr)?.size ?? 0) / maxPossibleCounterparties;
+        const isWide = breadth > POOL_DETECTION.COUNTERPARTY_SHARE;
+        return isFrequent && isWide;
+      })
       .map(([addr]) => addr),
   );
 

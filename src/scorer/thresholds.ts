@@ -75,6 +75,26 @@ export const EARLY_WALLETS_FETCH = {
   MAX_PAGES: 30,
 };
 
+/**
+ * How extractEarlyBuyers tells a pool apart from an ordinary wallet.
+ *
+ * Appearance frequency alone is not enough: a wash-trading wallet
+ * round-tripping against the pool can cross almost any frequency share just
+ * by trading with itself more. What it cannot do by repetition is widen WHO
+ * it trades with — a wash-trader's counterparties stay the pool and nothing
+ * else, however many round trips it makes, while a real pool is party to
+ * nearly every other participant in the sample by construction. So an
+ * address is classified as a pool only when BOTH hold: it appears in more
+ * than FREQUENCY_SHARE of all transfers, AND its distinct-counterparty set
+ * covers more than COUNTERPARTY_SHARE of every other address seen. Breadth
+ * is the condition doing the real work; frequency alone would still get
+ * fooled by self-churn.
+ */
+export const POOL_DETECTION = {
+  FREQUENCY_SHARE: 0.2,
+  COUNTERPARTY_SHARE: 0.3,
+};
+
 export const INSIDER_FLOW = {
   /** How many of the first buyers to examine. */
   EARLY_COHORT: 20,
