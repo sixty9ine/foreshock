@@ -33,6 +33,9 @@ Confirmed, and partially fixed:
 - **Untagged liquidity pools do inflate concentration, as predicted.** Scoring SNDWITCH (`J9qzFhTLYnmf3tZYvHBaF96rH3YKToELAAVMzz66pump`, a 3h-old pump.fun token) found its "largest holder" at 8.75% was actually the Pump.fun AMM pool's own PDA. While fixing it, found that `KNOWN_ADDRESSES` was typed as `Record<string, "burn" | "program" | "cex">` — missing the `"lp"` and `"treasury"` tags the scorer's `HolderTag` type already supports. Widened the type and tagged that one pool address `"lp"`. SNDWITCH concentration dropped from 12/100 to 0/100; composite 48 → 43, now correctly driven by ignition alone rather than a false concentration read. Confirmed 2026-10-06.
 - **This fix does not generalize.** The tagged address is that one pool's PDA — every pump.fun/Raydium/Orca pool has its own address, so the next new token will hit the same gap. The real fix (resolve any top holder back to its controlling AMM program automatically, instead of an address list) is still open — `helius.ts` already names it as the highest-value improvement. Until it's built, treat a low concentration score on a freshly-minted or thinly-traded token as unverified — check whether the top holder is actually a pool before trusting it.
 - Float tagging is otherwise still heuristic beyond `KNOWN_ADDRESSES`, which is now built from two tokens' (WIF's and SNDWITCH's) top-20 holders. Extending it is an ongoing task, not a one-time fix.
+- **`insiderFlow` now runs** (`src/data/earlyWallets.ts`). It walks a mint's Helius transaction history backward from the current tip, looking for genesis (the pool-creation transaction) within a 3,000-transaction budget (`EARLY_WALLETS_FETCH` in `thresholds.ts`). If genesis is reached, it ranks the first 20 distinct non-pool, non-deployer buyers by first appearance — pool/deployer exclusion is a frequency heuristic (whichever address is party to a disproportionate share of transfers), not a program-specific address list, so it works across Raydium/Orca/Pump.fun alike. If the budget runs out first, it declares itself unavailable rather than report on a window that is not provably the earliest — verified both ways: MASKIT (`Cd8LqgfpwzxjtU8YwrK9BvFwtR2FvPAHVbLZrVwpump`, ~20 min old, low volume) reached genesis and scored a real cohort (13 of 20 first buyers already out); SNDWITCH (now 19h old, ~2 swaps/sec) correctly hit the budget wall and said so. Confirmed 2026-10-07.
+- **This is slow and not free.** A budget-exceeded run costs up to ~70 Helius calls (30 pages walking back + per-wallet balance/funder lookups) and took 47 seconds on SNDWITCH; the happy path on a quiet token took under 8 seconds. Fine for the CLI, a real design decision for a live API — see "Immediate next actions."
+- Funding-source tracing (`fundedBy`) is itself best-effort within best-effort: one lookback call per wallet, and it only catches a SOL transfer immediately before the first buy. A wallet funded by a token swap, an airdrop, or that simply pre-existed with a balance reads as untraceable, not as "no shared funder" — confirmed on MASKIT, where only 25% of the cohort traced and the stage's own confidence score reflected that rather than hiding it.
 
 Does not exist yet:
 
@@ -57,9 +60,10 @@ This matters beyond hygiene. The project's pitch is that a stage with no data sa
 1. ~~Confirm Colosseum registration.~~ Done — confirmed 2026-10-06.
 2. ~~Get one successful Helius call.~~ Done — `--health` and a live WIF snapshot both work. See "Current state of the code" above.
 3. ~~Populate `KNOWN_ADDRESSES` against WIF.~~ Done — 14 CEX wallets tagged, WIF concentration settled to single digits. See above.
-4. **Next: the API route** (`src/api/server.ts`), then the dashboard, then the worked example.
-5. Keep extending `KNOWN_ADDRESSES` as other mints get scored. Confirmed working for CEX wallets (WIF) and one pump.fun pool (SNDWITCH) — still a per-address list, not general pool detection. Building the general case (resolve a top holder's controlling program automatically) is the next real lift on this front, not just more entries.
-6. `insiderFlow` is still the one genuinely missing stage. It needs first-buyer data (acquired vs. current balance, funding source) that neither Helius's current calls nor DexScreener expose — would mean walking the pool's transaction history via Helius's Enhanced Transactions API. Deliberately deferred in favor of the API route; see the exchange with Claude on 2026-10-06 for the two-option writeup if picking this up.
+4. ~~Build `insiderFlow`.~~ Done 2026-10-07 — see "Current state of the code." All five stages now run or honestly decline; none are permanently stubbed.
+5. **Next: the API route** (`src/api/server.ts`), then the dashboard, then the worked example.
+6. Keep extending `KNOWN_ADDRESSES` as other mints get scored. Confirmed working for CEX wallets (WIF) and one pump.fun pool (SNDWITCH) — still a per-address list, not general pool detection. Building the general case (resolve a top holder's controlling program automatically) is the next real lift on this front, not just more entries.
+7. **Before the API route ships, decide on insiderFlow's latency.** It can take up to ~50 seconds on a high-volume token (see below) — fine for a CLI call, not obviously fine for a judge hitting a live endpoint. Pick one: a timeout that degrades to the other four stages, a background job with a cached result, or a lower `MAX_PAGES` budget for the API path specifically.
 
 ## Cut-line
 
@@ -99,7 +103,7 @@ Stating these is a strength with judges, not a weakness. The README says all of 
 
 ## Where everything lives
 
-- **Code** — this repo, public on GitHub at https://github.com/sixty9ine/foreshock (created and pushed 2026-10-07). `src/scorer/` is pure logic, `src/data/` is all network access, `test/` has the 11 tests.
+- **Code** — this repo, public on GitHub at https://github.com/sixty9ine/foreshock (created and pushed 2026-10-07). `src/scorer/` is pure logic, `src/data/` is all network access, `test/` has the 13 tests.
 - **Thresholds** — `src/scorer/thresholds.ts`, every tuned number in one file, by design.
 - **Submission description** (486 words) — `SUBMISSION.md`.
 - **Entry form answers** (six questions) and the 467-character registration blurb — `ENTRY.md`.

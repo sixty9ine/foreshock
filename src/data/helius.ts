@@ -1,4 +1,5 @@
 import type { Holder, TokenSnapshot } from "../scorer/types.js";
+import { fetchEarlyWallets } from "./earlyWallets.js";
 import { KNOWN_ADDRESSES, ProviderError, type DataProvider } from "./provider.js";
 
 /**
@@ -97,6 +98,8 @@ export function helius(apiKey: string): DataProvider {
         }))
         .sort((a, b) => b.amount - a.amount);
 
+      const { earlyWallets, notes } = await fetchEarlyWallets(apiKey, mint);
+
       return {
         mint,
         fetchedAt: Date.now(),
@@ -112,6 +115,8 @@ export function helius(apiKey: string): DataProvider {
           volume24hUsd: 0,
           priceChange: {},
         },
+        ...(earlyWallets ? { earlyWallets } : {}),
+        ...(notes.length > 0 ? { notes } : {}),
       };
     },
   };

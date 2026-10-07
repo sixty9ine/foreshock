@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { extractEarlyBuyers } from "../src/data/earlyWallets.js";
 import { fixture } from "../src/data/fixture.js";
 import { merge, type DataProvider } from "../src/data/provider.js";
 import { score } from "../src/scorer/composite.js";
@@ -154,6 +155,70 @@ test("low coverage from a largest-first provider is not reported as a hidden wha
   const joined = r.caveats.join("\n");
   assert.match(joined, /upper bound and is reliable/i);
   assert.doesNotMatch(joined, /could sit outside that window/i);
+});
+
+test("extractEarlyBuyers excludes the pool and the deployer, and does not re-rank a repeat buyer", () => {
+  const POOL = "Pool11111111111111111111111111111111111111";
+  const DEPLOYER = "Deployer1111111111111111111111111111111111";
+  const BUYER_A = "BuyerA111111111111111111111111111111111111";
+  const BUYER_B = "BuyerB111111111111111111111111111111111111";
+  const BUYER_C = "BuyerC111111111111111111111111111111111111";
+
+  const tx = (from: string, to: string, tokenAmount: number, sig: string) => ({
+    signature: sig,
+    timestamp: 0,
+    fromUserAccount: from,
+    toUserAccount: to,
+    tokenAmount,
+  });
+
+  // The pool and a few genuine traders are party to every real transfer, so
+  // a transfer list of this size (not a handful) is what keeps a buyer who
+  // trades more than once from crossing the pool-frequency threshold itself.
+  const filler = Array.from({ length: 15 }, (_, i) =>
+    tx(POOL, `Filler${i}11111111111111111111111111111111`, 1, `f${i}`),
+  );
+
+  const transfers = [
+    tx(DEPLOYER, POOL, 1_000_000, "seed"), // pool creation — excluded as deployer
+    tx(POOL, BUYER_A, 50, "s1"), // BUYER_A's first buy — rank 1
+    tx(POOL, BUYER_B, 30, "s2"), // BUYER_B's first buy — rank 2
+    tx(BUYER_A, POOL, 20, "s3"), // BUYER_A sells some back — not a new rank
+    tx(POOL, BUYER_A, 10, "s4"), // BUYER_A buys again — must not change rank or acquiredAmount
+    tx(POOL, BUYER_C, 15, "s5"), // BUYER_C's first buy — rank 3
+    ...filler,
+  ];
+
+  const ranked = extractEarlyBuyers(transfers, 10);
+  const addresses = ranked.map((w) => w.address);
+
+  assert.ok(!addresses.includes(POOL), "the pool must not appear as a buyer");
+  assert.ok(!addresses.includes(DEPLOYER), "the deployer must not appear as a buyer");
+  assert.deepEqual(ranked.slice(0, 3).map((w) => w.address), [BUYER_A, BUYER_B, BUYER_C]);
+
+  const a = ranked.find((w) => w.address === BUYER_A)!;
+  assert.equal(a.rank, 1);
+  assert.equal(
+    a.acquiredAmount,
+    50,
+    "acquiredAmount must come from the FIRST buy, not a later repeat purchase",
+  );
+});
+
+test("extractEarlyBuyers stops at the requested cohort size", () => {
+  const POOL = "Pool11111111111111111111111111111111111111";
+  const transfers = Array.from({ length: 30 }, (_, i) => ({
+    signature: `s${i}`,
+    timestamp: 0,
+    fromUserAccount: POOL,
+    toUserAccount: `Buyer${String(i).padStart(2, "0")}1111111111111111111111111111`,
+    tokenAmount: 1,
+  }));
+
+  const ranked = extractEarlyBuyers(transfers, 5);
+  assert.equal(ranked.length, 5);
+  assert.equal(ranked[0]!.address, transfers[0]!.toUserAccount);
+  assert.equal(ranked[4]!.address, transfers[4]!.toUserAccount);
 });
 
 test("scores and confidence stay in range across all shapes", async () => {

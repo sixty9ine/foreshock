@@ -60,6 +60,21 @@ export const LIQUIDITY_TRAP = {
   THIN_POOL_USD: 25_000,
 };
 
+/**
+ * Walking a mint's transaction history back to its first buyer costs one
+ * Helius call per page. A viral pump.fun token can do hundreds of swaps a
+ * minute, so "walk until genesis" is unbounded in the worst case. This caps
+ * the spend: if genesis is not reached within the budget, insiderFlow must
+ * declare itself unavailable rather than report on a window that is NOT
+ * actually the first buyers — a partial, non-earliest sample dressed up as
+ * "early wallets" is exactly the kind of plausible-but-wrong value this
+ * project exists to refuse. See src/data/earlyWallets.ts.
+ */
+export const EARLY_WALLETS_FETCH = {
+  PAGE_SIZE: 100,
+  MAX_PAGES: 30,
+};
+
 export const INSIDER_FLOW = {
   /** How many of the first buyers to examine. */
   EARLY_COHORT: 20,
