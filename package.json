@@ -1,0 +1,23 @@
+{
+  "name": "foreshock",
+  "version": "0.1.0",
+  "description": "An early-warning read on Solana tokens. Scores where a token sits in the pump-and-collapse lifecycle from on-chain and market data, and ships as an open API any app can call.",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc",
+    "score": "tsx src/cli.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.6.0",
+    "@hono/node-server": "^1.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
