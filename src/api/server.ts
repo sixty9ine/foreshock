@@ -41,6 +41,15 @@ const app = new Hono();
 
 app.use("*", cors());
 
+// Liveness only: is this process up and serving requests. No external call —
+// a host's deploy health check must never depend on a third party's uptime,
+// or a Helius/DexScreener blip reads as "this app is broken" and gets the
+// instance killed and restarted for a problem restarting it cannot fix.
+app.get("/", (c) => c.json({ ok: true, service: "foreshock-api" }));
+
+// Dependency health, for a human or judge to check deliberately — this one
+// IS allowed to say unhealthy, because that is a true, different claim from
+// liveness above. Do not point a host's health check at this route.
 app.get("/health", async (c) => {
   const h = await provider.health();
   return c.json(h, h.ok ? 200 : 503);

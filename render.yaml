@@ -5,7 +5,10 @@ services:
     plan: free
     buildCommand: npm install && npm run build
     startCommand: node dist/api/server.js
-    healthCheckPath: /health
+    # Liveness only - does not call Helius/DexScreener. See src/api/server.ts
+    # for why the deploy health check must not be the same route as the
+    # dependency-health one.
+    healthCheckPath: /
     envVars:
       - key: HELIUS_API_KEY
         sync: false
