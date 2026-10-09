@@ -64,7 +64,14 @@ npm run score -- <mint>
 npm run score -- <mint> --json
 ```
 
-As an HTTP route (`src/api/server.ts`), locally for now — not yet deployed:
+As an HTTP route (`src/api/server.ts`), hosted at **https://foreshock-api.onrender.com**:
+
+```bash
+curl https://foreshock-api.onrender.com/health
+curl https://foreshock-api.onrender.com/score/<mint>
+```
+
+Or locally:
 
 ```bash
 export HELIUS_API_KEY=...
@@ -73,11 +80,32 @@ curl localhost:8787/health
 curl localhost:8787/score/<mint>
 ```
 
+The hosted instance is free-tier: it sleeps after inactivity (first request after idle takes ~30-60s), and its shared egress IP occasionally gets rate-limited by DexScreener or GeckoTerminal — see Limitations below. Neither ever produces a silently wrong score, only a visibly thinner one.
+
 A live request runs a smaller `insiderFlow` lookback budget than the CLI (`EARLY_WALLETS_FETCH.API_MAX_PAGES` in `thresholds.ts`) — a CLI invocation is someone willing to wait tens of seconds; an HTTP caller generally is not. The tradeoff is not correctness, only how often that stage gives up and declares itself unavailable rather than keep searching.
 
 ## Worked example
 
-> **TODO before submission.** Run this against a token that actually collapsed, with a snapshot from before the collapse, and paste the output here. This section is worth more than a sixth stage — it is the difference between a judge believing the model and taking your word for it.
+`MASKIT` (`Cd8LqgfpwzxjtU8YwrK9BvFwtR2FvPAHVbLZrVwpump`) launched on Solana at **2026-10-07 14:37 UTC**. Scored twice in its first three hours, then once more live, two days later, for this section.
+
+**T+2h38m** — `examples/maskit-2026-10-07-after-phase-fix.json`:
+
+```
+composite 76/100 (severe)   phase: captured
+concentration   100/100     top 10 wallets hold 100% of float; largest single wallet holds 97.4%
+insiderFlow      53/100     19 of 20 first buyers already fully exited; 0% of float still held by the original cohort
+```
+
+**Today** — reproducible right now, `npm run score -- Cd8LqgfpwzxjtU8YwrK9BvFwtR2FvPAHVbLZrVwpump`:
+
+```
+composite 83/100 (severe)   phase: captured
+caveat: provider dexscreener failed: no Solana pairs for this mint
+```
+
+DexScreener no longer lists a pair for this mint at all — the trading venue itself is gone. The model didn't predict that; it read the float as 97%+ controlled by a single wallet with its entire first-buyer cohort already out, within the token's first three hours, which is exactly the shape of a token that doesn't have anywhere good left to go. Full raw output for both runs, including the market data each one scored, is in `examples/`.
+
+This is also the mint that caught a real bug in the model. The first run above originally reported `phase: quiet` on that same 76/100 severe composite — concentration had no path to a phase label without an active ignition signal, so severe risk read as safe. Fixed the same day: `inferPhase()` gained a `captured` phase for exactly this shape, and `reconcilePhase()` now makes "quiet" structurally impossible against a high-or-severe composite, regardless of which stage combination produced it (`src/scorer/composite.ts`). Both the buggy and the fixed run are kept side by side in `examples/` — `maskit-2026-10-07.json` and `maskit-2026-10-07-after-phase-fix.json` — as the record, with a provenance note for each explaining what changed and why.
 
 ## Limitations
 
