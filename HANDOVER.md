@@ -45,7 +45,7 @@ Does not exist yet:
 
 - **The React dashboard.**
 - The worked example in the README, which is a TODO and matters more than a sixth signal stage.
-- **Deployment.** `src/api/server.ts` exists and runs locally (`npm run api`) — see "Current state of the code" below — but is not hosted anywhere. Do not claim a live API in `ENTRY.md`/`SUBMISSION.md` until it is actually reachable; that file's own note already says this.
+- **Deployment.** Target is Render, chosen 2026-10-09. `render.yaml` (Blueprint spec) is in the repo root — build `npm install && npm run build`, start `node dist/api/server.js`, health check `/health`, `HELIUS_API_KEY` marked `sync: false` so Render prompts for it in the dashboard rather than reading it from the repo. The production build was run and the compiled output verified working locally (`node dist/api/server.js`, not just `tsx`) before this was written. **Claude cannot create the Render account or click deploy — account creation is a hard no, and there are no Render credentials in this environment anyway.** Someone needs to: sign in at render.com (GitHub login is simplest, matches this repo's host), New + → Blueprint → select `sixty9ine/foreshock` → Render reads `render.yaml` → it will prompt for `HELIUS_API_KEY` — paste it there, not anywhere in the repo. Free tier sleeps after inactivity: first request after idle takes ~30-60s to wake, which matters for a judge's first click. Do not claim a live API in `ENTRY.md`/`SUBMISSION.md` until the Render URL is confirmed reachable.
 
 ## The bug pattern — read this before writing code
 
@@ -66,7 +66,7 @@ This matters beyond hygiene. The project's pitch is that a stage with no data sa
 3. ~~Populate `KNOWN_ADDRESSES` against WIF.~~ Done — 14 CEX wallets tagged, WIF concentration settled to single digits. See above.
 4. ~~Build `insiderFlow`.~~ Done 2026-10-07 — see "Current state of the code." All five stages now run or honestly decline; none are permanently stubbed.
 5. ~~Build the API route; decide insiderFlow's latency for it.~~ Done 2026-10-09 — `src/api/server.ts` exists, runs locally, and uses a smaller lookback budget than the CLI. See "Current state of the code."
-6. **Next: deploy the API route somewhere reachable**, then the dashboard, then the worked example. A deployed-but-unreachable route is still "does not exist" for a judge — don't claim it in `ENTRY.md`/`SUBMISSION.md` until it is.
+6. **Next: finish the Render deploy** (the blueprint is written and verified locally; someone with hands needs to sign in and click through — see "Does not exist yet" above), then the dashboard, then the worked example. A deployed-but-unreachable route is still "does not exist" for a judge — don't claim it in `ENTRY.md`/`SUBMISSION.md` until the URL is confirmed reachable.
 7. Keep extending `KNOWN_ADDRESSES` as other mints get scored. Confirmed working for CEX wallets (WIF) and one pump.fun pool (SNDWITCH) — still a per-address list, not general pool detection. Building the general case (resolve a top holder's controlling program automatically) is the next real lift on this front, not just more entries.
 
 ## Cut-line

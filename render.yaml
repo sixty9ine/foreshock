@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: foreshock-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/api/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: HELIUS_API_KEY
+        sync: false

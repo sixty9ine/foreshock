@@ -74,6 +74,8 @@ app.get("/score/:mint", async (c) => {
 app.notFound((c) => c.json({ error: "Not found. Try GET /health or GET /score/:mint" }, 404));
 
 const port = Number(process.env["PORT"] ?? 8787);
-serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`foreshock api listening on http://localhost:${info.port}`);
+// 0.0.0.0, not the library default: a container host's health check reaches
+// this on its own network interface, not loopback.
+serve({ fetch: app.fetch, port, hostname: "0.0.0.0" }, (info) => {
+  console.log(`foreshock api listening on 0.0.0.0:${info.port}`);
 });
