@@ -13,6 +13,30 @@ import { ProviderError, type DataProvider } from "./provider.js";
  * This provider knows nothing about holders — merge() it with a chain
  * provider.
  */
+/**
+ * DexScreener is keyless and IP-rate-limited. On a host with a shared egress
+ * IP (Render's free tier, for one) that bucket is shared with OTHER
+ * tenants' traffic, so a 429 can show up regardless of this process's own
+ * request rate. A short retry absorbs that kind of transient spike; it does
+ * not paper over a real outage — MAX_RETRIES is small on purpose, and a 429
+ * that survives all of them still surfaces as a true provider failure.
+ */
+async function fetchWithRetry(url: string): Promise<Response> {
+  const MAX_RETRIES = 2;
+  const BASE_DELAY_MS = 300;
+
+  let lastRes: Response | undefined;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const res = await fetch(url);
+    if (res.ok || (res.status !== 429 && res.status < 500)) return res;
+    lastRes = res;
+    if (attempt < MAX_RETRIES) {
+      await new Promise((r) => setTimeout(r, BASE_DELAY_MS * 2 ** attempt));
+    }
+  }
+  return lastRes!;
+}
+
 export function dexscreener(): DataProvider {
   const base = "https://api.dexscreener.com/latest/dex";
 
@@ -21,7 +45,9 @@ export function dexscreener(): DataProvider {
 
     async health() {
       try {
-        const res = await fetch(`${base}/tokens/So11111111111111111111111111111111111111112`);
+        const res = await fetchWithRetry(
+          `${base}/tokens/So11111111111111111111111111111111111111112`,
+        );
         return res.ok
           ? { ok: true, detail: "reachable, no key required" }
           : { ok: false, detail: `${res.status} ${res.statusText}` };
@@ -31,7 +57,7 @@ export function dexscreener(): DataProvider {
     },
 
     async getSnapshot(mint: string): Promise<TokenSnapshot> {
-      const res = await fetch(`${base}/tokens/${mint}`);
+      const res = await fetchWithRetry(`${base}/tokens/${mint}`);
       if (!res.ok) {
         throw new ProviderError("dexscreener", res.status, `${res.status} ${res.statusText}`);
       }
