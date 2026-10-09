@@ -63,6 +63,7 @@ export function score(snap: TokenSnapshot): Report {
           : {}),
       },
       holderRows: snap.holders.length,
+      ...(snap.series?.length ? { series: snap.series } : {}),
     },
   };
 }

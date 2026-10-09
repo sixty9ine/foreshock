@@ -84,6 +84,16 @@ The hosted instance is free-tier: it sleeps after inactivity (first request afte
 
 A live request runs a smaller `insiderFlow` lookback budget than the CLI (`EARLY_WALLETS_FETCH.API_MAX_PAGES` in `thresholds.ts`) — a CLI invocation is someone willing to wait tens of seconds; an HTTP caller generally is not. The tradeoff is not correctness, only how often that stage gives up and declares itself unavailable rather than keep searching.
 
+As a reference dashboard (`dashboard/`, React + Vite) — not the product, a demonstration that the API is callable:
+
+```bash
+cd dashboard
+npm install
+npm run dev          # calls the hosted API by default
+```
+
+Point it at a local API instead with `VITE_API_BASE=http://localhost:8787 npm run dev`. It renders exactly what the API returns — composite, phase, every stage's evidence (including the `unavailable` reason when one didn't run), and the caveats — plus one price sparkline when the snapshot has series data. No separate styling layer on top of what the model actually said.
+
 ## Worked example
 
 `MASKIT` (`Cd8LqgfpwzxjtU8YwrK9BvFwtR2FvPAHVbLZrVwpump`) launched on Solana at **2026-10-07 14:37 UTC**. Scored twice in its first three hours, then once more live, two days later, for this section.

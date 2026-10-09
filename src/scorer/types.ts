@@ -154,5 +154,8 @@ export interface Report {
     /** How many holder rows the snapshot carried — not the same as
      *  holderCount, which is the provider's own total-holder figure. */
     holderRows: number;
+    /** Hourly candles, oldest first, when the exhaustion stage had them —
+     *  same plain-copy rule as market above. For a chart, not a verdict. */
+    series?: Candle[];
   };
 }
