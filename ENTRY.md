@@ -39,7 +39,7 @@ If the form counts bytes rather than characters, the em-dashes are three bytes e
 
 > TypeScript on Node 20, structured so the scoring logic is a pure function — snapshot in, report out, with no network calls inside it. That makes it testable without consuming rate limit and trivial to expose over HTTP, as a CLI, or as an imported library.
 >
-> All chain access sits behind a single provider interface, so the data source can be swapped without touching the scorer. The primary provider is the Helius DAS API for mint supply and token-account enumeration, with market data from DexScreener. HTTP via Hono. Tests with the Node test runner, run against a synthetic data provider that reproduces captured, distributing and healthy token shapes so the model can be validated deterministically. React for the reference client. MIT licensed throughout.
+> All chain access sits behind a single provider interface, so the data source can be swapped without touching the scorer. The primary provider is the Helius DAS API for mint supply and token-account enumeration, with market data from DexScreener. HTTP via Hono, live at https://foreshock-api.onrender.com (`GET /score/<mint>`). Tests with the Node test runner, run against a synthetic data provider that reproduces captured, distributing and healthy token shapes so the model can be validated deterministically. React for the reference client. MIT licensed throughout.
 
 ## 4. Which chains does your project use?
 
@@ -63,4 +63,4 @@ If the form counts bytes rather than characters, the em-dashes are three bytes e
 
 **Q5 is the one that wins or loses the ecosystem track.** It is long deliberately — "does this actually use Solana or just mention it" is the question that track exists to ask.
 
-**Q3 describes architecture, not a deployed endpoint.** Keep it that way until the HTTP route actually exists and is reachable. Do not claim a live API before `src/api/server.ts` is written and deployed.
+**Q3 now names a live endpoint** (https://foreshock-api.onrender.com), confirmed reachable 2026-10-09 — `src/api/server.ts` is written and deployed. One honest caveat if a judge hits it directly: it's free-tier, so it sleeps after inactivity (~30-60s to wake) and its shared egress IP occasionally gets rate-limited by DexScreener/GeckoTerminal, which shows up as some stages reporting unavailable rather than a wrong score. Both are documented in README.md's Limitations section — worth knowing before a live demo, not worth being caught flat-footed by.
