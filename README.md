@@ -64,6 +64,17 @@ npm run score -- <mint>
 npm run score -- <mint> --json
 ```
 
+As an HTTP route (`src/api/server.ts`), locally for now — not yet deployed:
+
+```bash
+export HELIUS_API_KEY=...
+npm run api                         # listens on :8787 by default, PORT to override
+curl localhost:8787/health
+curl localhost:8787/score/<mint>
+```
+
+A live request runs a smaller `insiderFlow` lookback budget than the CLI (`EARLY_WALLETS_FETCH.API_MAX_PAGES` in `thresholds.ts`) — a CLI invocation is someone willing to wait tens of seconds; an HTTP caller generally is not. The tradeoff is not correctness, only how often that stage gives up and declares itself unavailable rather than keep searching.
+
 ## Worked example
 
 > **TODO before submission.** Run this against a token that actually collapsed, with a snapshot from before the collapse, and paste the output here. This section is worth more than a sixth stage — it is the difference between a judge believing the model and taking your word for it.

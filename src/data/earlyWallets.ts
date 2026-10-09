@@ -9,6 +9,9 @@ import type { EarlyWallet } from "../scorer/types.js";
  *      genesis is reached or the lookback budget runs out. Reaching genesis
  *      is the only condition under which "first buyers" means anything —
  *      see EARLY_WALLETS_FETCH in thresholds.ts for why this is bounded.
+ *      `maxPages` defaults to that budget but is overridable per call: the
+ *      CLI can afford the full 30-page walk, a live HTTP request generally
+ *      cannot — see src/api/server.ts for the smaller budget it passes.
  *   2. From that confirmed-complete history, rank distinct non-pool,
  *      non-deployer wallets by first appearance and read their acquired
  *      amount off that first buy.
@@ -20,12 +23,13 @@ import type { EarlyWallet } from "../scorer/types.js";
 export async function fetchEarlyWallets(
   apiKey: string,
   mint: string,
+  maxPages: number = EARLY_WALLETS_FETCH.MAX_PAGES,
 ): Promise<{ earlyWallets?: EarlyWallet[]; notes: string[] }> {
   const notes: string[] = [];
 
   let walk: WalkResult;
   try {
-    walk = await walkToGenesis(apiKey, mint);
+    walk = await walkToGenesis(apiKey, mint, maxPages);
   } catch (e) {
     notes.push(
       `insiderFlow: transaction history fetch failed — ${e instanceof Error ? e.message : String(e)}`,
@@ -35,7 +39,7 @@ export async function fetchEarlyWallets(
 
   if (!walk.reachedGenesis) {
     notes.push(
-      `insiderFlow: could not trace first buyers — this mint had more than ${EARLY_WALLETS_FETCH.MAX_PAGES * EARLY_WALLETS_FETCH.PAGE_SIZE} transactions in the lookback budget, so the oldest window reached is not provably the earliest.`,
+      `insiderFlow: could not trace first buyers — this mint had more than ${maxPages * EARLY_WALLETS_FETCH.PAGE_SIZE} transactions in the lookback budget, so the oldest window reached is not provably the earliest.`,
     );
     return { notes };
   }
@@ -83,11 +87,11 @@ interface WalkResult {
   transfers: RawTransfer[];
 }
 
-async function walkToGenesis(apiKey: string, mint: string): Promise<WalkResult> {
+async function walkToGenesis(apiKey: string, mint: string, maxPages: number): Promise<WalkResult> {
   const transfers: RawTransfer[] = [];
   let before: string | undefined;
 
-  for (let page = 0; page < EARLY_WALLETS_FETCH.MAX_PAGES; page++) {
+  for (let page = 0; page < maxPages; page++) {
     const url = new URL(`https://api.helius.xyz/v0/addresses/${mint}/transactions`);
     url.searchParams.set("api-key", apiKey);
     url.searchParams.set("limit", String(EARLY_WALLETS_FETCH.PAGE_SIZE));

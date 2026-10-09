@@ -79,7 +79,16 @@ export const LIQUIDITY_TRAP = {
  */
 export const EARLY_WALLETS_FETCH = {
   PAGE_SIZE: 100,
+  /** CLI budget. A CLI invocation is a person willing to wait; 30 pages
+   *  (~3,000 transactions) took up to ~50s and ~70 Helius calls on a hot
+   *  pump.fun token in testing. */
   MAX_PAGES: 30,
+  /** API budget. A live HTTP request is not the same willingness — a judge
+   *  hitting the endpoint expects seconds, not tens of seconds. Lower means
+   *  more tokens report insiderFlow unavailable rather than guess; it does
+   *  not change correctness, only how often the budget is the thing that
+   *  gives up first. See src/api/server.ts. */
+  API_MAX_PAGES: 5,
 };
 
 /**

@@ -24,7 +24,10 @@ import { KNOWN_ADDRESSES, ProviderError, type DataProvider } from "./provider.js
  * Helius does not price tokens — pair this with the DexScreener provider via
  * merge() so the market-driven stages have something to read.
  */
-export function helius(apiKey: string): DataProvider {
+export function helius(
+  apiKey: string,
+  opts?: { earlyWalletsMaxPages?: number },
+): DataProvider {
   const rpc = `https://mainnet.helius-rpc.com/?api-key=${apiKey}`;
 
   async function call<T>(method: string, params: unknown): Promise<T> {
@@ -98,7 +101,11 @@ export function helius(apiKey: string): DataProvider {
         }))
         .sort((a, b) => b.amount - a.amount);
 
-      const { earlyWallets, notes } = await fetchEarlyWallets(apiKey, mint);
+      const { earlyWallets, notes } = await fetchEarlyWallets(
+        apiKey,
+        mint,
+        opts?.earlyWalletsMaxPages,
+      );
 
       return {
         mint,
