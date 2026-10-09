@@ -87,6 +87,7 @@ Stated plainly, because a risk tool that oversells itself is worse than none.
 - **Float tagging is the weak point.** Concentration is measured against float, which requires correctly identifying LP, burn, CEX and program accounts. An untagged pool address reads as a whale and inflates the score. `KNOWN_ADDRESSES` covers the obvious cases; pool resolution is heuristic.
 - **The exit-impact figure is an upper bound.** Constant product, single pool, no routing. Real aggregator routing does better. Replacing this with a live quote is the highest-value single improvement available.
 - **Insider flow needs first-buyer data** that not every provider exposes. Where it is missing the stage sits out rather than guessing.
+- **The hosted instance can hit upstream rate limits.** Free-tier hosting means a shared egress IP, and DexScreener/GeckoTerminal are both keyless, best-effort public APIs — a 429 from either reads in the output as `ignition`/`exhaustion` unavailable and a named caveat, never a silent wrong number. Re-running the same mint a few seconds later usually clears it. This is a hosting constraint, not a scoring one.
 - **This is not financial advice and not a rug detector.** It describes structure, not intent. A high score means a token is shaped like ones that collapsed, which is not the same as saying it will.
 
 ## Methodology provenance
