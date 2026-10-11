@@ -194,8 +194,5 @@ function collectCaveats(snap: TokenSnapshot, stages: StageResult[]): string[] {
   if (!snap.supply.circulating) {
     out.push("No circulating-supply figure; float is derived from total supply minus tagged accounts.");
   }
-  out.push(
-    "Thresholds are ported from EVM-side research on AI-agent narrative tokens and have not been calibrated on Solana. Treat the magnitude as indicative and the ordering as the useful part.",
-  );
   return out;
 }

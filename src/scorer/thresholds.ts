@@ -6,11 +6,18 @@
  * These started as the thresholds from the BICO / HEI / DEXE / TUT research,
  * which was EVM-side and in a different liquidity regime. Solana memecoin
  * float, pool depth and holder distributions do not match those conditions.
- * Treat every number below as a starting guess that has not been validated
- * on Solana, and say so anywhere the output is presented.
  *
- * Calibrating these against five tokens that actually collapsed is worth more
- * to the submission than a fourth or fifth signal stage.
+ * On 2026-10-11, TOP1_FLOAT and MCAP_LIQ_RATIO were spot-checked against 5
+ * real Solana tokens (WIF, BONK, MASKIT, SNDWITCH, RARINU) and adjusted
+ * where the evidence showed a clear miscalibration — see each constant's own
+ * comment for what was found and why. Every other number below is still an
+ * untouched starting guess, not validated on Solana at all.
+ *
+ * Neither the adjusted nor the untouched numbers are a statistical
+ * calibration. Five tokens is a spot-check, not a sample — it can catch an
+ * obvious false positive (which is what happened here), it cannot establish
+ * a validated cutoff. Say so anywhere the output is presented, for every
+ * threshold in this file.
  */
 
 export const WEIGHTS: Record<string, number> = {
@@ -43,8 +50,13 @@ export const IGNITION = {
 export const CONCENTRATION = {
   /** Share of FLOAT held by the top 10 non-LP, non-burn, non-CEX wallets. */
   TOP10_FLOAT: { lo: 0.2, hi: 0.6 },
-  /** Single largest float holder. */
-  TOP1_FLOAT: { lo: 0.04, hi: 0.2 },
+  /** Single largest float holder. Raised hi from 0.2 to 0.6 on 2026-10-11
+   *  against 5 real Solana tokens: at the old hi, SNDWITCH's 22.8% largest
+   *  holder already maxed this out, scoring identically to MASKIT's 97.5%
+   *  and RARINU's 95% — real range (23% to 97%) flattened into one bucket.
+   *  Matches TOP10_FLOAT's hi for consistency. Spot-check against 5 tokens,
+   *  not a statistical calibration — see the file header. */
+  TOP1_FLOAT: { lo: 0.04, hi: 0.6 },
   /** Number of wallets needed to reach half the float. Fewer is worse. */
   WALLETS_TO_HALF: { worst: 5, benign: 60 },
   /** Concentration score above which the "captured" phase fires on its own,
@@ -57,8 +69,17 @@ export const CONCENTRATION = {
 };
 
 export const LIQUIDITY_TRAP = {
-  /** Market cap / pooled liquidity. High means the price is unsupported. */
-  MCAP_LIQ_RATIO: { lo: 8, hi: 60 },
+  /** Market cap / pooled liquidity. High means the price is unsupported.
+   *  Raised hi from 60 to 250 on 2026-10-11: BONK — one of Solana's most
+   *  established, legitimate tokens — reads 174x and was maxing this out as
+   *  "severe," while its actual modelled exit impact (EXIT_IMPACT below,
+   *  the more meaningful signal) is a harmless 1.1%. Large legitimate
+   *  tokens naturally carry big ratios; the old hi conflated that with
+   *  thin-pool fragility. No confirmed-bad Solana token with a high ratio
+   *  was in this sample to anchor the new hi against a true positive —
+   *  this clears a real false positive, it is not a validated upper bound.
+   *  Spot-check against 5 tokens, not a statistical calibration. */
+  MCAP_LIQ_RATIO: { lo: 8, hi: 250 },
   /** Modelled price impact of selling this USD notional, via constant product. */
   EXIT_PROBE_USD: 10_000,
   /** Impact fraction of that probe, 0..1. */

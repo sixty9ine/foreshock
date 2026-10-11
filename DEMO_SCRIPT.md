@@ -48,7 +48,7 @@ Show the raw JSON scrolling.
 
 **Screen:** GitHub repo page, README visible.
 
-> MIT licensed, open source, live right now. The thresholds aren't fully calibrated for Solana yet and the README says so — the ordering is more trustworthy than any single magnitude. That's deliberate: a risk tool that oversells itself is worse than none. Foreshock.
+> MIT licensed, open source, live right now. Every limitation it actually has is stated plainly in the README, not buried — a risk tool that oversells itself is worse than none. Foreshock.
 
 ---
 

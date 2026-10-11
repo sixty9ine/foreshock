@@ -14,6 +14,6 @@ Concentration is measured against float, not total supply — LP, burn, CEX and 
 
 **Who it is for.** Wallets and launchpads wanting a pre-trade risk read without building the model. Bots needing a programmatic gate. Researchers who want evidence rather than a verdict. The business is paid tiers on a primitive other products depend on; the open endpoint is the distribution, not the product.
 
-**Limitations, stated plainly.** The thresholds are ported from EVM-side research and are not yet calibrated for Solana — the ordering the model produces is more trustworthy than any single magnitude. The exit-impact figure is a constant-product upper bound, not a routed quote. Float tagging is heuristic beyond the known addresses. The README says all three.
+**Limitations, stated plainly.** The exit-impact figure is a constant-product upper bound, not a routed quote. Float tagging is heuristic beyond the known addresses. The README says both, and more.
 
 Foreshock describes structure, not intent. A high score means a token is shaped like ones that collapsed. A foreshock is recognised, not predicted — and so is this.

@@ -22,7 +22,15 @@ test("a captured float scores higher than a healthy one", async () => {
 });
 
 test("LP and burn balances are excluded from float", async () => {
-  const snap = await snapshot("captured");
+  // "healthy" specifically: its baseline concentration has headroom, so
+  // mislabelling the pool produces an unambiguous delta. "captured" is
+  // already near-saturated on TOP10_FLOAT/WALLETS_TO_HALF alone (by
+  // design — it's the severe fixture), so after the 2026-10-11 TOP1_FLOAT
+  // widening the same swap round-trips to the same integer score there —
+  // not because tagging stopped working, but because the rounded score had
+  // no headroom left to show it. See the evidence-level numbers if that
+  // regresses again: top10 share and top1 share both still move correctly.
+  const snap = await snapshot("healthy");
   const withLp = scoreConcentration(snap);
 
   // Same token, but the pool is mislabelled as an ordinary holder.
@@ -161,12 +169,29 @@ test("low coverage from a largest-first provider is not reported as a hidden wha
 test("severe concentration without ignition reaches 'captured', not 'quiet'", async () => {
   const snap = await snapshot("captured");
 
-  // Keep captured's steep-head holders (concentration stays severe) but
-  // flatten everything ignition reads, and remove exhaustion's and
-  // insiderFlow's inputs — a token that is structurally captured but not
-  // currently pumping, distributing, or exhausted.
+  // The fixture's own "steep-head" holders (largest ~18% of float) no
+  // longer reads as severe after the 2026-10-11 TOP1_FLOAT recalibration —
+  // correctly so, real moderate cases (SNDWITCH, ~23%) shouldn't max out
+  // the same as real severe ones (MASKIT, ~97%). Build a holder set that
+  // actually matches what severe concentration looks like in real data:
+  // one dominant holder, same shape as MASKIT's.
+  const dominant = snap.holders.find((h) => h.tag === "lp")
+    ? snap.holders.filter((h) => h.tag === "lp" || h.tag === "burn")
+    : [];
+  const total = snap.supply.total;
+  const severeHolders = [
+    ...dominant,
+    { address: "Dominant1111111111111111111111111111111111", amount: total * 0.7, pct: 0.7, tag: "unknown" as const },
+    { address: "Rest111111111111111111111111111111111111111", amount: total * 0.07, pct: 0.07, tag: "unknown" as const },
+  ];
+
+  // Keep severe concentration but flatten everything ignition reads, and
+  // remove exhaustion's and insiderFlow's inputs — a token that is
+  // structurally captured but not currently pumping, distributing, or
+  // exhausted.
   const flat: TokenSnapshot = {
     ...snap,
+    holders: severeHolders,
     market: {
       ...snap.market,
       liquidityUsd: 500_000,

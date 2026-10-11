@@ -7,7 +7,7 @@ Paste-ready answers for the Crypto World's Fair submission. Kept in the repo bec
 **Ecosystem track:** Solana
 **Tagline:** An early-warning read on Solana tokens. Open, scored, callable by anyone.
 
-The long-form project description (494 words) is in `SUBMISSION.md`.
+The long-form project description (468 words) is in `SUBMISSION.md`.
 
 ---
 

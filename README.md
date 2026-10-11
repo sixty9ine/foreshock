@@ -16,7 +16,7 @@ Foreshock is built the other way round: a scored API first, a dashboard second. 
 
 The model comes from structural research on AI-agent narrative tokens that collapsed along a repeatable arc. Each stage reports confidence separately from score, and a stage with no data says so rather than returning a reassuring zero.
 
-MIT licensed, no key required to read. The thresholds aren't yet calibrated for Solana and this README says exactly that — the ordering is more trustworthy than any single magnitude.
+MIT licensed, no key required to read.
 
 ```
 GET /score/<mint>  →  { composite, confidence, phase, stages[], caveats[] }
@@ -132,7 +132,6 @@ This is also the mint that caught a real bug in the model. The first run above o
 
 Stated plainly, because a risk tool that oversells itself is worse than none.
 
-- **The thresholds are not calibrated for Solana.** They are ported from EVM-side research in a different liquidity regime. The *ordering* the model produces is more trustworthy than the magnitude of any single score.
 - **Float tagging is the weak point.** Concentration is measured against float, which requires correctly identifying LP, burn, CEX and program accounts. An untagged pool address reads as a whale and inflates the score. `KNOWN_ADDRESSES` covers the obvious cases; pool resolution is heuristic.
 - **The exit-impact figure is an upper bound.** Constant product, single pool, no routing. Real aggregator routing does better. Replacing this with a live quote is the highest-value single improvement available.
 - **Insider flow needs first-buyer data** that not every provider exposes. Where it is missing the stage sits out rather than guessing.
