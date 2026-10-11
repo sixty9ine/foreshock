@@ -95,7 +95,7 @@ The hosted instance is free-tier: it sleeps after inactivity (first request afte
 
 A live request runs a smaller `insiderFlow` lookback budget than the CLI (`EARLY_WALLETS_FETCH.API_MAX_PAGES` in `thresholds.ts`) — a CLI invocation is someone willing to wait tens of seconds; an HTTP caller generally is not. The tradeoff is not correctness, only how often that stage gives up and declares itself unavailable rather than keep searching.
 
-As a reference dashboard (`dashboard/`, React + Vite) — not the product, a demonstration that the API is callable:
+As a reference dashboard (`dashboard/`, React + Vite) — not the product, a demonstration that the API is callable — hosted at **https://foreshock-dashboard.onrender.com**:
 
 ```bash
 cd dashboard
