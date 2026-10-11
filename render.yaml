@@ -4,7 +4,13 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: node dist/api/server.js
+    # Re-seeds the one known-good tracked example (see scripts/seed-history.ts)
+    # on every boot, not just first deploy: the free tier's disk resets on
+    # redeploy AND on wake-from-sleep, so "first deploy only" would leave the
+    # baseline missing after most restarts. Running it every boot can append
+    # a duplicate row if the disk ever does survive a restart - harmless,
+    # same real data, not a correctness issue, just a little redundant.
+    startCommand: npm run seed-history && node dist/api/server.js
     # Liveness only - does not call Helius/DexScreener. See src/api/server.ts
     # for why the deploy health check must not be the same route as the
     # dependency-health one.
