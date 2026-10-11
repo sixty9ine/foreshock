@@ -45,6 +45,17 @@ Two outputs, not one:
 
 Every stage reports `confidence` separately from `score`. A stage with no data declares itself `unavailable` rather than returning zero, because a silent zero is indistinguishable from "no risk found" and that is how risk tools lie.
 
+## Inference
+
+Every live score is tracked, and compared against what's been tracked before. The response carries an `inference` section: a plain-language read of the result, and — only when a real match exists — a note like *"This looks similar to the cycle of X, tracked across N runs: its composite climbed from A to B, and its phase moved from C to D."*
+
+Two rules keep this honest rather than decorative:
+
+- A candidate is only cited if enough of its stage scores actually overlap with the current ones — one shared dimension isn't a pattern.
+- What a similar token "went on to do" is read only from that same mint's own later tracked runs. A token tracked once gets "not enough history yet," never an invented trajectory.
+
+This starts close to empty on purpose. A real comparison needs a token this tool has actually watched over time, and that only comes from running it — there is no shortcut that doesn't mean fabricating outcomes for tokens nobody tracked. History grows from here. On the hosted free-tier instance it currently resets on redeploy — see Limitations.
+
 ## Run it
 
 No API key needed to see it work:
@@ -125,7 +136,8 @@ Stated plainly, because a risk tool that oversells itself is worse than none.
 - **Float tagging is the weak point.** Concentration is measured against float, which requires correctly identifying LP, burn, CEX and program accounts. An untagged pool address reads as a whale and inflates the score. `KNOWN_ADDRESSES` covers the obvious cases; pool resolution is heuristic.
 - **The exit-impact figure is an upper bound.** Constant product, single pool, no routing. Real aggregator routing does better. Replacing this with a live quote is the highest-value single improvement available.
 - **Insider flow needs first-buyer data** that not every provider exposes. Where it is missing the stage sits out rather than guessing.
-- **The hosted instance can hit upstream rate limits.** Free-tier hosting means a shared egress IP, and DexScreener/GeckoTerminal are both keyless, best-effort public APIs — a 429 from either reads in the output as `ignition`/`exhaustion` unavailable and a named caveat, never a silent wrong number. Re-running the same mint a few seconds later usually clears it. This is a hosting constraint, not a scoring one.
+- **The hosted instance can hit upstream rate limits.** Free-tier hosting means a shared egress IP, and DexScreener/GeckoTerminal are both keyless, best-effort public APIs — a 429 from either reads in the output as `ignition`/`exhaustion` unavailable and a named caveat, never a silent wrong number. Re-running the same mint a few seconds later usually clears it. A 30s result cache cuts this service's own repeat-call volume, but doesn't fix a shared IP congested by other tenants — the only real fix is a dedicated IP, which costs real money and hasn't been done. This is a hosting constraint, not a scoring one.
+- **Inference history is thin, and on the hosted instance, not yet durable.** The comparison pool only has what this tool has actually tracked — a handful of tokens as of this writing — so most scores currently come back with no comparable match, correctly. On Render's free tier the history file also resets on redeploy, same underlying cause as the rate-limit point above (ephemeral filesystem). It grows the right way: every real run, never backfilled or assumed.
 - **This is not financial advice and not a rug detector.** It describes structure, not intent. A high score means a token is shaped like ones that collapsed, which is not the same as saying it will.
 
 ## Methodology provenance

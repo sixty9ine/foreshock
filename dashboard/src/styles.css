@@ -347,6 +347,52 @@ header h1 {
   margin-bottom: 6px;
 }
 
+.inference {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+}
+
+.inference h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.inference-summary {
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.inference-similar {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inference-similar li {
+  font-size: 13px;
+  line-height: 1.5;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.inference-empty {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  margin: 12px 0 0;
+}
+
 .raw {
   margin-top: 24px;
   font-size: 12px;

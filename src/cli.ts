@@ -5,6 +5,7 @@ import { dexscreener } from "./data/dexscreener.js";
 import { fixture } from "./data/fixture.js";
 import { helius } from "./data/helius.js";
 import { merge, type DataProvider } from "./data/provider.js";
+import { trackAndInfer, type Inference } from "./inference.js";
 import { usd } from "./scorer/util.js";
 
 /**
@@ -13,6 +14,7 @@ import { usd } from "./scorer/util.js";
  *   npm run score -- <mint>                   score a live mint
  *   npm run score -- --fixture distributing   score synthetic data, no key needed
  *   npm run score -- <mint> --json            machine-readable
+ *   npm run score -- <mint> --no-track        don't record this run to history
  */
 
 const argv = process.argv.slice(2);
@@ -112,14 +114,19 @@ async function main(): Promise<void> {
   const snap = await provider.getSnapshot(mint);
   const report = score(snap);
 
+  // Fixtures are synthetic — tracking them would seed history with made-up
+  // tokens. Only live scores are ever recorded.
+  const tracking = !usingFixture && !has("no-track");
+  const inference = tracking ? trackAndInfer(report) : undefined;
+
   if (has("json")) {
-    console.log(JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(inference ? { ...report, inference } : report, null, 2));
     return;
   }
-  render(report);
+  render(report, inference);
 }
 
-function render(r: Report): void {
+function render(r: Report, inference?: Inference): void {
   const head = r.symbol ? `${r.symbol} · ${r.mint}` : r.mint;
   console.log(`\n${head}`);
   console.log("─".repeat(Math.min(head.length, 72)));
@@ -141,6 +148,18 @@ function render(r: Report): void {
   if (r.caveats.length > 0) {
     console.log("caveats");
     for (const c of r.caveats) console.log(`  · ${c}`);
+    console.log("");
+  }
+
+  if (inference) {
+    console.log("here's what I think based on this result");
+    console.log(`  ${inference.summary}`);
+    for (const s of inference.similar) console.log(`  ${s.note}`);
+    if (inference.similar.length === 0) {
+      console.log(
+        "  No comparable tracked tokens yet — keep scoring tokens to build up the data bank this compares against.",
+      );
+    }
     console.log("");
   }
 

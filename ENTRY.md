@@ -7,15 +7,15 @@ Paste-ready answers for the Crypto World's Fair submission. Kept in the repo bec
 **Ecosystem track:** Solana
 **Tagline:** An early-warning read on Solana tokens. Open, scored, callable by anyone.
 
-The long-form project description (486 words) is in `SUBMISSION.md`.
+The long-form project description (494 words) is in `SUBMISSION.md`.
 
 ---
 
-## Registration blurb — 467 characters
+## Registration blurb — 463 characters
 
 > Foreshock scores where a Solana token sits in the pump-and-collapse lifecycle — attention ignition, float concentration, liquidity trap, insider distribution, exhaustion — with the on-chain evidence behind every number. It ships as an open API any wallet, launchpad or bot can call, so the risk read reaches the moment someone is about to buy instead of sitting in a dashboard nobody opens. MIT licensed. Concentration is measured against float, not total supply.
 
-Shorter version, 370 characters, if the field is tighter than expected:
+Shorter version, 366 characters, if the field is tighter than expected:
 
 > Foreshock reads where a Solana token sits in the pump-and-collapse lifecycle — ignition, float concentration, liquidity trap, insider distribution, exhaustion — with the on-chain evidence behind each score. It is an open API rather than a dashboard: any wallet, launchpad or bot can call it and show the risk where people actually buy. MIT licensed, no key required.
 
@@ -39,7 +39,7 @@ If the form counts bytes rather than characters, the em-dashes are three bytes e
 
 > TypeScript on Node 20, structured so the scoring logic is a pure function — snapshot in, report out, with no network calls inside it. That makes it testable without consuming rate limit and trivial to expose over HTTP, as a CLI, or as an imported library.
 >
-> All chain access sits behind a single provider interface, so the data source can be swapped without touching the scorer. The primary provider is the Helius DAS API for mint supply and token-account enumeration, with market data from DexScreener. HTTP via Hono, live at https://foreshock-api.onrender.com (`GET /score/<mint>`). Tests with the Node test runner, run against a synthetic data provider that reproduces captured, distributing and healthy token shapes so the model can be validated deterministically. React for the reference client. MIT licensed throughout.
+> All chain access sits behind a single provider interface, so the data source can be swapped without touching the scorer. The primary provider is the Helius DAS API for mint supply and token-account enumeration, with market data from DexScreener. HTTP via Hono, live at https://foreshock-api.onrender.com (`GET /score/<mint>`). Tests with the Node test runner, run against a synthetic data provider that reproduces captured, distributing and healthy token shapes so the model can be validated deterministically. The reference client (React, Vite) calls that same hosted endpoint directly and renders every stage's evidence, not a mock. MIT licensed throughout.
 
 ## 4. Which chains does your project use?
 
@@ -64,3 +64,5 @@ If the form counts bytes rather than characters, the em-dashes are three bytes e
 **Q5 is the one that wins or loses the ecosystem track.** It is long deliberately — "does this actually use Solana or just mention it" is the question that track exists to ask.
 
 **Q3 now names a live endpoint** (https://foreshock-api.onrender.com), confirmed reachable 2026-10-09 — `src/api/server.ts` is written and deployed. One honest caveat if a judge hits it directly: it's free-tier, so it sleeps after inactivity (~30-60s to wake) and its shared egress IP occasionally gets rate-limited by DexScreener/GeckoTerminal, which shows up as some stages reporting unavailable rather than a wrong score. Both are documented in README.md's Limitations section — worth knowing before a live demo, not worth being caught flat-footed by.
+
+**The reference dashboard (Q1, Q3) is real now, not aspirational** — built and verified 2026-10-10 against the live deployment, not a mock, including while DexScreener was actually rate-limited (it showed the degraded read correctly). Runs locally (`cd dashboard && npm install && npm run dev`); not deployed as a static site, which is fine — Q1 already frames it as existing only to demonstrate the API, not as a thing judges need to click through on its own.

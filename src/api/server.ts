@@ -5,6 +5,7 @@ import { cors } from "hono/cors";
 import { dexscreener } from "../data/dexscreener.js";
 import { helius } from "../data/helius.js";
 import { merge, type DataProvider } from "../data/provider.js";
+import { trackAndInfer } from "../inference.js";
 import { score } from "../scorer/composite.js";
 import { EARLY_WALLETS_FETCH } from "../scorer/thresholds.js";
 
@@ -19,6 +20,12 @@ import { EARLY_WALLETS_FETCH } from "../scorer/thresholds.js";
  * terminal, and is not fine for a judge hitting an endpoint expecting
  * seconds. EARLY_WALLETS_FETCH.API_MAX_PAGES is deliberately much smaller
  * than the CLI's budget for exactly this reason — see thresholds.ts.
+ *
+ * Every successful /score call is also tracked to local history
+ * (src/data/history.ts) and compared against what's been tracked before —
+ * see src/inference.ts. On Render's free tier that storage is ephemeral
+ * and resets on every redeploy; the feature is real, the persistence isn't
+ * yet. See HANDOVER.md.
  */
 
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -77,7 +84,9 @@ app.get("/score/:mint", async (c) => {
     return c.json({ error: e instanceof Error ? e.message : String(e) }, 502);
   }
 
-  return c.json(score(snap));
+  const report = score(snap);
+  const inference = trackAndInfer(report);
+  return c.json({ ...report, inference });
 });
 
 app.notFound((c) => c.json({ error: "Not found. Try GET /health or GET /score/:mint" }, 404));

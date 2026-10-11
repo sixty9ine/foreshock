@@ -35,6 +35,11 @@ export interface Candle {
   volumeUsd: number;
 }
 
+export interface Inference {
+  summary: string;
+  similar: Array<{ mint: string; symbol?: string; note: string }>;
+}
+
 export interface Report {
   mint: string;
   symbol?: string;
@@ -57,6 +62,10 @@ export interface Report {
     holderRows: number;
     series?: Candle[];
   };
+  /** Only present from the live API — the CLI only attaches it when a run
+   *  is tracked. Composed from stored history, not part of the pure
+   *  scorer's own output. */
+  inference?: Inference;
 }
 
 export interface ApiError {

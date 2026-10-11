@@ -9,6 +9,7 @@
     "build": "tsc",
     "score": "tsx src/cli.ts",
     "api": "tsx src/api/server.ts",
+    "seed-history": "tsx scripts/seed-history.ts",
     "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

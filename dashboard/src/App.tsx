@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { type Report, ScoreError, scoreMint } from "./api";
 import { band } from "./band";
+import { InferenceCard } from "./InferenceCard";
 import { Sparkline } from "./Sparkline";
 import { StageCard } from "./StageCard";
 
@@ -42,10 +43,7 @@ export function App() {
     <div className="page">
       <header>
         <h1>Foreshock</h1>
-        <p className="tagline">
-          An early-warning read on Solana tokens. This is the reference client — the API is the
-          product.
-        </p>
+        <p className="tagline">An early-warning read on Solana tokens.</p>
       </header>
 
       <form
@@ -146,6 +144,8 @@ function ReportView({ report: r }: { report: Report }) {
           </ul>
         </div>
       )}
+
+      {r.inference && <InferenceCard inference={r.inference} />}
 
       <details className="raw">
         <summary>Raw inputs scored</summary>

@@ -37,31 +37,67 @@ async function fetchWithRetry(url: string): Promise<Response> {
   return lastRes!;
 }
 
+/**
+ * A short-lived in-memory cache, scoped to one provider instance's process
+ * lifetime. This exists to cut THIS SERVICE's own repeat-call volume
+ * against a keyless, shared-IP-rate-limited API — see fetchWithRetry above.
+ * It does not fix a congested shared IP; nothing running inside this
+ * process can. It only reduces how much this process adds to it, which
+ * matters most on the long-running API server, where many requests for the
+ * same trending mint can land within seconds of each other. On the
+ * short-lived CLI this cache simply never gets reused and costs nothing.
+ *
+ * Caches failures too, briefly, on purpose: during a real 429 window, every
+ * incoming request retrying independently is the worst time to keep adding
+ * load. Concurrent callers for the same key share one in-flight promise
+ * rather than firing duplicate requests, which also solves the thundering
+ * herd case for free.
+ */
+function withCache<T>(ttlMs: number) {
+  const entries = new Map<string, { expires: number; value: Promise<T> }>();
+  return (key: string, fetcher: () => Promise<T>): Promise<T> => {
+    const hit = entries.get(key);
+    const now = Date.now();
+    if (hit && hit.expires > now) return hit.value;
+    const value = fetcher();
+    entries.set(key, { expires: now + ttlMs, value });
+    return value;
+  };
+}
+
+const CACHE_TTL_MS = 30_000;
+
 export function dexscreener(): DataProvider {
   const base = "https://api.dexscreener.com/latest/dex";
+  const cachedTokenFetch = withCache<{ pairs: Pair[] | null }>(CACHE_TTL_MS);
+  const cachedOhlcv = withCache<OhlcvResult>(CACHE_TTL_MS);
+
+  async function fetchTokens(mint: string): Promise<{ pairs: Pair[] | null }> {
+    const res = await fetchWithRetry(`${base}/tokens/${mint}`);
+    if (!res.ok) {
+      throw new ProviderError("dexscreener", res.status, `${res.status} ${res.statusText}`);
+    }
+    return (await res.json()) as { pairs: Pair[] | null };
+  }
 
   return {
     name: "dexscreener",
 
     async health() {
       try {
-        const res = await fetchWithRetry(
-          `${base}/tokens/So11111111111111111111111111111111111111112`,
+        const json = await cachedTokenFetch("So11111111111111111111111111111111111111112", () =>
+          fetchTokens("So11111111111111111111111111111111111111112"),
         );
-        return res.ok
+        return json.pairs
           ? { ok: true, detail: "reachable, no key required" }
-          : { ok: false, detail: `${res.status} ${res.statusText}` };
+          : { ok: false, detail: "reachable but returned no pairs" };
       } catch (e) {
         return { ok: false, detail: e instanceof Error ? e.message : String(e) };
       }
     },
 
     async getSnapshot(mint: string): Promise<TokenSnapshot> {
-      const res = await fetchWithRetry(`${base}/tokens/${mint}`);
-      if (!res.ok) {
-        throw new ProviderError("dexscreener", res.status, `${res.status} ${res.statusText}`);
-      }
-      const json = (await res.json()) as { pairs: Pair[] | null };
+      const json = await cachedTokenFetch(mint, () => fetchTokens(mint));
       const pairs = (json.pairs ?? []).filter((p) => p.chainId === "solana");
       if (pairs.length === 0) {
         throw new ProviderError("dexscreener", undefined, `no Solana pairs for ${mint}`);
@@ -87,7 +123,9 @@ export function dexscreener(): DataProvider {
       const pairCreatedAt = created.length > 0 ? Math.min(...created) : undefined;
 
       const history = deepest.pairAddress
-        ? await fetchOhlcv(deepest.pairAddress, priceUsd, pairCreatedAt)
+        ? await cachedOhlcv(deepest.pairAddress, () =>
+            fetchOhlcv(deepest.pairAddress!, priceUsd, pairCreatedAt),
+          )
         : { notes: [] };
 
       return {
@@ -123,11 +161,17 @@ export function dexscreener(): DataProvider {
  *  for anything older than that, the all-time high is only a high-since-window
  *  and the caller is told so rather than left to assume it is exhaustive.
  */
+interface OhlcvResult {
+  series?: Candle[];
+  ath?: { priceUsd: number; at: number };
+  notes: string[];
+}
+
 async function fetchOhlcv(
   poolAddress: string,
   livePriceUsd: number,
   pairCreatedAt: number | undefined,
-): Promise<{ series?: Candle[]; ath?: { priceUsd: number; at: number }; notes: string[] }> {
+): Promise<OhlcvResult> {
   const notes: string[] = [];
   try {
     const res = await fetch(
